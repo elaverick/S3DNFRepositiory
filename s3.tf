@@ -38,7 +38,7 @@ resource "aws_s3_bucket_policy" "this" {
   })
 }
 
-resource "aws_s3_object" "source_files" {
+resource "aws_s3_object" "basicAssets" {
     bucket = aws_s3_bucket.this.id
 
     for_each = fileset("basicAssets/","**/*.*")
