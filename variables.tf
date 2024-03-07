@@ -7,6 +7,6 @@ variable "s3_name" {
   type = string
 }
 
-variable "repoPath" {
+variable "repo_path" {
   type = string
 }
