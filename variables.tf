@@ -7,13 +7,17 @@ variable "s3_name" {
   type = string
 }
 
-variable "repo_path" {
+variable "domain_name" {
+  type = string
+  default = ""  
+}
+
+variable "hosted_zone_id" {
   type = string
 }
 
-variable "lambda_function_name" {
+variable "repo_path" {
   type = string
-  default = "dnfrepohandler"
 }
 
 variable "content_types" {

@@ -98,3 +98,29 @@ resource "aws_s3_object" "basicAssets" {
     source = "basicAssets/${each.value}"
     content_type = var.content_types[split(".",each.value)[length(split(".", each.value)) - 1]]
 }
+
+#---------------------------------
+# S3 Objects - RPMs
+#---------------------------------
+resource "aws_s3_object" "rpms" {
+    bucket = aws_s3_bucket.dnfrepo.id
+
+    for_each = fileset("${repo_path}/","**/*.rpm")
+    
+    key = "${each.value}"
+    source = "${repo_path}/${each.value}"
+    content_type = "application/octet-stream"
+}
+
+#---------------------------------
+# S3 Objects - repodata
+#---------------------------------
+resource "aws_s3_object" "rpms" {
+    bucket = aws_s3_bucket.dnfrepo.id
+
+    for_each = fileset("${repo_path}/repodata/","**/*.*")
+    
+    key = "repodata/${each.value}"
+    source = "${repo_path}/repodata/${each.value}"
+    content_type = "application/octet-stream"
+}

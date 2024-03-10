@@ -71,6 +71,14 @@ resource "aws_cloudfront_distribution" "dnfrepo" {
       restriction_type = "none"
     }
   }
+
+  # Only include aliases if domain_name variable is populated
+  dynamic "aliases" {
+    for_each = var.domain_name != "" ? [var.domain_name] : []
+    content {
+      domain_name = aliases.value
+    }
+  }
   
   viewer_certificate {
     cloudfront_default_certificate = true
@@ -78,4 +86,18 @@ resource "aws_cloudfront_distribution" "dnfrepo" {
 
   price_class = "PriceClass_100"
   
+}
+
+resource "aws_route53_record" "cloudfront_distribution" {
+  count = var.domain_name != "" ? 1 : 0
+
+  zone_id = var.hosted_zone_id  # Change to your Route 53 zone ID
+  name    = var.domain_name
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.dnfrepo.domain_name
+    zone_id                = aws_cloudfront_distribution.dnfrepo.hosted_zone_id
+    evaluate_target_health = false
+  }
 }
