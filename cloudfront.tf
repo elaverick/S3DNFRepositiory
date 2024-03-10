@@ -1,14 +1,28 @@
-
+#---------------------------------
+# Local Variables
+#---------------------------------
 locals {
   s3_origin_id   = "${var.s3_name}-origin"
   s3_domain_name = "${var.s3_name}.s3-website.${var.region}.amazonaws.com"
 }
 
-resource "aws_cloudfront_distribution" "this" {
+#---------------------------------
+# CloudFront OAC
+#---------------------------------
+resource "aws_cloudfront_origin_access_control" "default" {
+  name                              = "default"
+  description                       = "Grant cloudfront access to s3 bucket ${aws_s3_bucket.dnfrepo.id}"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+#---------------------------------
+# CloudFront Distribution
+#---------------------------------
+resource "aws_cloudfront_distribution" "dnfrepo" {
   depends_on = [
-    aws_s3_bucket.this,
-    aws_s3_bucket_public_access_block.this,
-    aws_s3_bucket_website_configuration.this
+    aws_s3_bucket.dnfrepo
   ]
 
   enabled = true
@@ -17,11 +31,18 @@ resource "aws_cloudfront_distribution" "this" {
   
   origin {
     origin_id                = local.s3_origin_id
-    domain_name              = aws_s3_bucket_website_configuration.this.website_endpoint
+    origin_access_control_id = aws_cloudfront_origin_access_control.default.id
+    domain_name              = aws_s3_bucket.dnfrepo.bucket_regional_domain_name
   }
 
   custom_error_response {
     error_code = 404
+    response_page_path = "/404.html"
+    response_code = 404
+  }
+
+  custom_error_response {
+    error_code = 403
     response_page_path = "/404.html"
     response_code = 404
   }

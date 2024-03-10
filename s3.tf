@@ -1,81 +1,100 @@
-resource "aws_s3_bucket" "this" {
+#---------------------------------
+# S3 Bucket
+#---------------------------------
+resource "aws_s3_bucket" "dnfrepo" {
   bucket = var.s3_name
 }
 
-resource "aws_s3_bucket_acl" "this" {
+#---------------------------------
+# S3 Bucket ACL
+#---------------------------------
+resource "aws_s3_bucket_acl" "dnfrepo" {
   depends_on = [
-    aws_s3_bucket.this,
-    aws_s3_bucket_ownership_controls.this,
-    aws_s3_bucket_public_access_block.this
+    aws_s3_bucket.dnfrepo,
+    aws_s3_bucket_ownership_controls.dnfrepo
   ]
 
-  bucket = aws_s3_bucket.this.id
-  acl    = "public-read"
+  bucket = aws_s3_bucket.dnfrepo.id
+  acl    = "private"
 }
 
-resource "aws_s3_bucket_ownership_controls" "this" {
-  bucket = aws_s3_bucket.this.id
+#---------------------------------
+# S3 Bucket Ownership Controls
+#---------------------------------
+resource "aws_s3_bucket_ownership_controls" "dnfrepo" {
+  depends_on = [
+    aws_s3_bucket.dnfrepo
+  ]
+  bucket = aws_s3_bucket.dnfrepo.id
   rule {
     object_ownership = "BucketOwnerPreferred"
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "this" {
-  bucket = aws_s3_bucket.this.id
+#---------------------------------
+# S3 Bucket Public Access Block
+#---------------------------------
+resource "aws_s3_bucket_public_access_block" "dnfrepo" {
+  depends_on = [
+    aws_s3_bucket.dnfrepo,
+    aws_s3_bucket_acl.dnfrepo
+  ]
+  bucket = aws_s3_bucket.dnfrepo.id
 
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_website_configuration" "this" {
+#---------------------------------
+# S3 Bucket Policy
+#---------------------------------
+resource "aws_s3_bucket_policy" "dnfrepo" {
   depends_on = [
-    aws_s3_bucket.this,
-    aws_s3_bucket_public_access_block.this
+    aws_cloudfront_distribution.dnfrepo
   ]
-  
-  bucket = aws_s3_bucket.this.bucket
-
-  index_document {
-    suffix = "index.html"
-  }
-
-  error_document {
-    key = "404.html"
-  }
-
-}
-
-resource "aws_s3_bucket_policy" "this" {
-  depends_on = [
-    aws_s3_bucket.this,
-    aws_s3_bucket_public_access_block.this
-  ]
-  bucket = aws_s3_bucket.this.id
-
+  bucket = aws_s3_bucket.dnfrepo.id
   policy = jsonencode({
-    Version = "2012-10-17"
-    Id      = "AllowGetObjects"
+    Version = "2012-10-17",
     Statement = [
       {
-        Sid       = "AllowPublic"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.this.arn}/**"
+        Effect = "Allow",
+        Principal = "*",
+        Action = "s3:GetObject",
+        Resource = "${aws_s3_bucket.dnfrepo.arn}/*",
+        Condition = {
+          StringLike = {
+            "aws:SourceArn": [
+              aws_cloudfront_distribution.dnfrepo.arn
+            ]
+          }
+        }
+      },
+      {
+        Effect = "Deny",
+        Principal = "*",
+        Action = "s3:*",
+        Resource = aws_s3_bucket.dnfrepo.arn,
+        Condition = {
+          Bool = {
+            "aws:SecureTransport": "false"
+          }
+        }
       }
     ]
   })
 }
 
+#---------------------------------
+# S3 Objects - Basic Assets
+#---------------------------------
 resource "aws_s3_object" "basicAssets" {
-    bucket = aws_s3_bucket.this.id
+    bucket = aws_s3_bucket.dnfrepo.id
 
-    for_each = fileset("basicAssets/","**/*.{html,htm,css,png,jpg,gif,jpeg,js}")
+    for_each = fileset("basicAssets/","**/*.{html,htm,css,js,png,jpg,jpeg}")
     
-    key = each.value
+    key = "${each.value}"
     source = "basicAssets/${each.value}"
-
-
+    content_type = var.content_types[split(".",each.value)[length(split(".", each.value)) - 1]]
 }
