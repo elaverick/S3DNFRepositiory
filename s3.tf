@@ -115,7 +115,7 @@ resource "aws_s3_object" "rpms" {
 #---------------------------------
 # S3 Objects - repodata
 #---------------------------------
-resource "aws_s3_object" "rpms" {
+resource "aws_s3_object" "repodata" {
     bucket = aws_s3_bucket.dnfrepo.id
 
     for_each = fileset("${repo_path}/repodata/","**/*.*")
