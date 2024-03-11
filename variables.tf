@@ -30,6 +30,10 @@ variable "content_types" {
     "jpeg" = "image/jpeg"
     "css" = "text/css"
     "js" = "text/js"
+    "xml" = "application/xml"
+    "bz2" = "application/x-bzip2"
+    "gz" = "application/gzip"
+    "asc" = "application/pgp-signature"
     # Add more key-value pairs as needed
   }
 }

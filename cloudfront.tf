@@ -72,32 +72,13 @@ resource "aws_cloudfront_distribution" "dnfrepo" {
     }
   }
 
-  # Only include aliases if domain_name variable is populated
-  dynamic "aliases" {
-    for_each = var.domain_name != "" ? [var.domain_name] : []
-    content {
-      domain_name = aliases.value
-    }
-  }
-  
+  aliases = var.domain_name != "" ? [var.domain_name] : []
+
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = var.domain_name != "" ? false :true
+    acm_certificate_arn            = var.domain_name != "" ? aws_acm_certificate_validation.cert.certificate_arn : null
+    ssl_support_method             = var.domain_name != "" ? "sni-only" : null
   }
 
   price_class = "PriceClass_100"
-  
-}
-
-resource "aws_route53_record" "cloudfront_distribution" {
-  count = var.domain_name != "" ? 1 : 0
-
-  zone_id = var.hosted_zone_id  # Change to your Route 53 zone ID
-  name    = var.domain_name
-  type    = "A"
-
-  alias {
-    name                   = aws_cloudfront_distribution.dnfrepo.domain_name
-    zone_id                = aws_cloudfront_distribution.dnfrepo.hosted_zone_id
-    evaluate_target_health = false
-  }
 }
